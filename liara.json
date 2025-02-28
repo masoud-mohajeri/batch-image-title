@@ -1,0 +1,11 @@
+{
+  "port": 3000,
+  "platform": "node",
+  "app": "nifty-mccarthy-yjdnivpo4",
+  "build": {
+    "location": "iran"
+  },
+  "node": {
+    "version": "22"
+  }
+}
