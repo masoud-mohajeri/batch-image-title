@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import './App.css';
+
+// TODO file name template
 
 function App() {
   const [image, setImage] = useState(null);
@@ -14,6 +15,8 @@ function App() {
   
   const canvasRef = useRef<any>(null);
   const imageRef = useRef<any>(null);
+  const canvasContainer = useRef<null>(null);
+
   
   // Handle image upload
   const handleImageUpload = (e:any) => {
@@ -40,33 +43,178 @@ function App() {
     const namesList = e.target.value.split('\n').filter((name:any) => name.trim() !== '');
     setNames(namesList);
   };
+
+  //@ts-ignore
+  // Function to convert viewport coordinates to image coordinates
+function viewportToImageCoordinates(viewportX, viewportY, canvas, image) {
+  // Get the displayed dimensions of the image in the canvas
+  const displayWidth = canvas.clientWidth;
+  const displayHeight = canvas.clientHeight;
   
-  // Canvas mouse events for selection
-  const handleMouseDown = (e:any) => {
+  // Get the actual dimensions of the image
+  const imageWidth = image.width;
+  const imageHeight = image.height;
+  
+  // Calculate the scale factors
+  const scaleX = imageWidth / displayWidth;
+  const scaleY = imageHeight / displayHeight;
+  
+  // Convert the coordinates
+  const imageX = viewportX * scaleX;
+  const imageY = viewportY * scaleY;
+  
+  return { x: imageX, y: imageY };
+}
+
+  //@ts-ignore
+// Function to convert image coordinates to viewport coordinates
+function imageToViewportCoordinates(imageX, imageY, canvas, image) {
+  // Get the displayed dimensions of the image in the canvas
+  const displayWidth = canvas.clientWidth;
+  const displayHeight = canvas.clientHeight;
+  
+  // Get the actual dimensions of the image
+  const imageWidth = image.width;
+  const imageHeight = image.height;
+  
+  // Calculate the scale factors
+  const scaleX = displayWidth / imageWidth;
+  const scaleY = displayHeight / imageHeight;
+  
+  // Convert the coordinates
+  const viewportX = imageX * scaleX;
+  const viewportY = imageY * scaleY;
+  
+  return { x: viewportX, y: viewportY };
+}
+
+  //@ts-ignore
+// Updated mouse event handlers
+const handleMouseDown = (e) => {
+  const canvas = canvasRef.current;
+  const rect = canvas.getBoundingClientRect();
+  
+  // Get viewport coordinates
+  const viewportX = e.clientX - rect.left;
+  const viewportY = e.clientY - rect.top;
+  
+  // Convert to image coordinates
+  const imageCoords = viewportToImageCoordinates(viewportX, viewportY, canvas, imageRef.current);
+  
+  setStartPos(imageCoords);
+  setSelection({ x: imageCoords.x, y: imageCoords.y, width: 0, height: 0 });
+  setIsSelecting(true);
+};
+
+const handleMouseMove = (e:any) => {
+  if (!isSelecting) return;
+  
+  const canvas = canvasRef.current;
+  const rect = canvas.getBoundingClientRect();
+  
+  // Get viewport coordinates
+  const viewportX = e.clientX - rect.left;
+  const viewportY = e.clientY - rect.top;
+  
+  // Convert to image coordinates
+  const imageCoords = viewportToImageCoordinates(viewportX, viewportY, canvas, imageRef.current);
+  
+  const width = imageCoords.x - startPos.x;
+  const height = imageCoords.y - startPos.y;
+  
+  setSelection({
+    x: width > 0 ? startPos.x : imageCoords.x,
+    y: height > 0 ? startPos.y : imageCoords.y,
+    width: Math.abs(width),
+    height: Math.abs(height)
+  });
+  
+  drawImageAndSelection();
+};
+
+// Updated drawImageAndSelection function
+const drawImageAndSelection = () => {
+  const canvas = canvasRef.current;
+  if (!canvas || !imageRef.current) return;
+  
+  const ctx = canvas.getContext('2d');
+  
+  // Set canvas size to match image
+  canvas.width = imageRef.current.width;
+  canvas.height = imageRef.current.height;
+  
+  //@ts-ignore
+  // Adjust canvas display size if needed, maintaining aspect ratio
+  const maxDisplayWidth = canvasContainer.current?.clientWidth;
+  const aspectRatio = imageRef.current.width / imageRef.current.height;
+  
+  if (canvas.width > maxDisplayWidth) {
+    canvas.style.width = `${maxDisplayWidth}px`;
+    canvas.style.height = `${maxDisplayWidth / aspectRatio}px`;
+  } else {
+    canvas.style.width = `${canvas.width}px`;
+    canvas.style.height = `${canvas.height}px`;
+  }
+  
+  // Draw image
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(imageRef.current, 0, 0);
+  
+  // Draw selection rectangle
+  if (selection.width > 0 && selection.height > 0) {
+    ctx.strokeStyle = '#FF0000';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(selection.x, selection.y, selection.width, selection.height);
+  }
+};
+  
+
+const handleMouseUp = () => {
+  setIsSelecting(false);
+};
+
+
+
+  // Touch events for mobile devices
+  const handleTouchStart = (e:any) => {
+    e.preventDefault(); // Prevent scrolling while selecting
+    if (e.touches.length !== 1) return; // Only handle single touch
+    
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
     
-    setStartPos({ x, y });
-    setSelection({ x, y, width: 0, height: 0 });
+    // Get viewport coordinates from the touch
+    const viewportX = e.touches[0].clientX - rect.left;
+    const viewportY = e.touches[0].clientY - rect.top;
+    
+    // Convert to image coordinates
+    const imageCoords = viewportToImageCoordinates(viewportX, viewportY, canvas, imageRef.current);
+    
+    setStartPos(imageCoords);
+    setSelection({ x: imageCoords.x, y: imageCoords.y, width: 0, height: 0 });
     setIsSelecting(true);
   };
   
-  const handleMouseMove = (e:any) => {
-    if (!isSelecting) return;
+  const handleTouchMove = (e:any) => {
+    e.preventDefault(); // Prevent scrolling while selecting
+    if (!isSelecting || e.touches.length !== 1) return;
     
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
     
-    const width = x - startPos.x;
-    const height = y - startPos.y;
+    // Get viewport coordinates from the touch
+    const viewportX = e.touches[0].clientX - rect.left;
+    const viewportY = e.touches[0].clientY - rect.top;
+    
+    // Convert to image coordinates
+    const imageCoords = viewportToImageCoordinates(viewportX, viewportY, canvas, imageRef.current);
+    
+    const width = imageCoords.x - startPos.x;
+    const height = imageCoords.y - startPos.y;
     
     setSelection({
-      x: width > 0 ? startPos.x : x,
-      y: height > 0 ? startPos.y : y,
+      x: width > 0 ? startPos.x : imageCoords.x,
+      y: height > 0 ? startPos.y : imageCoords.y,
       width: Math.abs(width),
       height: Math.abs(height)
     });
@@ -74,33 +222,10 @@ function App() {
     drawImageAndSelection();
   };
   
-  const handleMouseUp = () => {
+  const handleTouchEnd = () => {
     setIsSelecting(false);
   };
-  
-  // Draw function for canvas
-  const drawImageAndSelection = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !imageRef.current) return;
-    
-    const ctx = canvas.getContext('2d');
-    
-    // Set canvas size to match image
-    canvas.width = imageRef.current.width;
-    canvas.height = imageRef.current.height;
-    
-    // Draw image
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(imageRef.current, 0, 0);
-    
-    // Draw selection rectangle
-    if (selection.width > 0 && selection.height > 0) {
-      ctx.strokeStyle = '#FF0000';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(selection.x, selection.y, selection.width, selection.height);
-    }
-  };
-  
+
   // Process images with names
   const processImages = () => {
     if (!image || names.length === 0 || selection.width === 0 || selection.height === 0) {
@@ -164,8 +289,7 @@ function App() {
   
   return (
     <div className="app">
-      <h1>Image Name Batch Processor</h1>
-      <h1>تست فونت</h1>
+      <h2>Image Name Batch Processor</h2>
       
       <div className="control-panel">
         <div className="section">
@@ -227,7 +351,7 @@ function App() {
         </div>
       </div>
       
-      <div className="canvas-container">
+      <div className="canvas-container" ref={canvasContainer}>
         {image ? (
           <canvas 
             ref={canvasRef}
@@ -235,6 +359,10 @@ function App() {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
           />
         ) : (
           <div className="placeholder">Upload an image to get started</div>
