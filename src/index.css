@@ -1,7 +1,9 @@
 @import url('./assets/fonts/style/_fonts.css');
 
+
+
 :root {
-  font-family: Vazir, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: Vazir, SweetFlower , system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -19,7 +21,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-  font-family: Arial, sans-serif;
+  font-family: Vazir, SweetFlower , system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
 h1 {
@@ -51,7 +53,7 @@ textarea {
   border: 1px solid #ddd;
   border-radius: 4px;
   text-align: right;
-  font-family: Vazir;
+  font-family: Vazir, SweetFlower;
   direction: rtl;
 } 
 
@@ -134,7 +136,7 @@ canvas {
 .image-name {
   font-weight: bold;
   margin-bottom: 10px;
-font-family: Vazir;
+  font-family: Vazir , SweetFlower;
 }
 
 button {

@@ -289,7 +289,7 @@ const handleMouseUp = () => {
   
   return (
     <div className="app">
-      <h2>Image Name Batch Processor</h2>
+      <h2 style={{fontFamily:"SweetFlower"}}>Image Name Batch Processor</h2>
       
       <div className="control-panel">
         <div className="section">
@@ -327,6 +327,7 @@ const handleMouseUp = () => {
               Font:
               <select value={fontFamily} onChange={(e:any) => setFontFamily(e.target.value)}>
                 <option value="Vazir">وزیر</option>
+                <option value="SweetFlower">SweetFlower</option>
                 <option value="Samim">صمیم</option>
                 <option value="Shabnam">شبنم</option>
                 <option value="Sahel">ساحل</option>
