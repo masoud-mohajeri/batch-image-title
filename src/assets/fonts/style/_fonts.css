@@ -1,4 +1,22 @@
 @font-face {
+  font-family: BerkshireSwash;
+  src: url('../file/BerkshireSwash-Regular.ttf')
+    format("woff2");
+  font-weight: normal;
+}
+@font-face {
+  font-family: OpenSans;
+  src: url('../file/OpenSans-Regular.ttf')
+    format("woff2");
+  font-weight: normal;
+}
+@font-face {
+  font-family: Raleway; 
+  src: url('../file/Raleway-Regular.ttf')
+    format("woff2");
+  font-weight: normal;
+}
+@font-face {
   font-family: SweetFlower;
   src: url('../file/SweetFlower.otf')
     format("woff2");

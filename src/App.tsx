@@ -327,7 +327,9 @@ const handleMouseUp = () => {
               Font:
               <select value={fontFamily} onChange={(e:any) => setFontFamily(e.target.value)}>
                 <option value="Vazir">وزیر</option>
-                <option value="SweetFlower">SweetFlower</option>
+                <option value="OpenSans">OpenSans</option>
+                <option value="BerkshireSwash">BerkshireSwash</option>
+                <option value="Raleway">Raleway</option>
                 <option value="Samim">صمیم</option>
                 <option value="Shabnam">شبنم</option>
                 <option value="Sahel">ساحل</option>
