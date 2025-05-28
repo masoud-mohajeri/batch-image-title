@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-
+import './assets/fonts/style/_fonts.css'
 // TODO file name template
 
 function App() {
@@ -40,7 +40,7 @@ function App() {
   
   // Handle names input
   const handleNamesInput = (e:any) => {
-    const namesList = e.target.value.split('\n').filter((name:any) => name.trim() !== '');
+    const namesList = e.target.value.split('\n').filter((name:any) => name.trim() !== '').map((n: string)=> n.split(' ').map((s: string)=> s.charAt(0).toUpperCase() + String(s).slice(1)).join(' '))
     setNames(namesList);
   };
 
@@ -277,8 +277,10 @@ const handleMouseUp = () => {
   
   // Download all processed images
   const downloadAllImages = () => {
-    processedImages.forEach((img:any) => {
-      downloadImage(img.dataUrl, img.name);
+    processedImages.forEach((img:any,index:number) => {
+      setTimeout(() => {
+        downloadImage(img.dataUrl, img.name);
+      }, index * 500);
     });
   };
   
@@ -289,7 +291,10 @@ const handleMouseUp = () => {
   
   return (
     <div className="app">
-      <h2 style={{fontFamily:"SweetFlower"}}>Image Name Batch Processor</h2>
+      <h2 style={{fontFamily:"SweetFlower"}}>SweetFlower</h2>
+      <h2 style={{fontFamily:"BerkshireSwash"}}>BerkshireSwash</h2>
+      <h2 style={{fontFamily:"Raleway"}}>Raleway</h2>
+
       
       <div className="control-panel">
         <div className="section">
