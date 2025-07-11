@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import './assets/fonts/style/_fonts.css'
-// TODO file name template
 
 function App() {
-  const [image, setImage] = useState(null);
-  const [names, setNames] = useState([]);
+  const [image, setImage] = useState<any>(null);
+  const [names, setNames] = useState<any[]>([]);
   const [selection, setSelection] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [isSelecting, setIsSelecting] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
@@ -12,16 +11,24 @@ function App() {
   const [textColor, setTextColor] = useState('#000000');
   const [fontSize, setFontSize] = useState(24);
   const [fontFamily, setFontFamily] = useState('Vazir');
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadedCount, setDownloadedCount] = useState(0);
+  const [originalImageType, setOriginalImageType] = useState('image/png');
+  const [originalImageQuality, setOriginalImageQuality] = useState(0.9);
   
-  const canvasRef = useRef<any>(null);
-  const imageRef = useRef<any>(null);
-  const canvasContainer = useRef<null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const canvasContainer = useRef<HTMLDivElement>(null);
 
   
   // Handle image upload
-  const handleImageUpload = (e:any) => {
-    const file = e.target.files[0];
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
+      // Store original image type and quality settings
+      setOriginalImageType(file.type);
+      setOriginalImageQuality(file.type === 'image/jpeg' ? 0.9 : 1.0);
+      
       const reader = new FileReader();
       reader.onload = (event) => {
         const img = new Image();
@@ -29,156 +36,167 @@ function App() {
           imageRef.current = img;
           drawImageAndSelection();
         };
-        // @ts-ignore
-        img.src = event.target.result;
-        // @ts-ignore
-        setImage(event.target.result);
+        img.src = event.target?.result as string;
+        setImage(event.target?.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
   
   // Handle names input
-  const handleNamesInput = (e:any) => {
-    const namesList = e.target.value.split('\n').filter((name:any) => name.trim() !== '').map((n: string)=> n.split(' ').map((s: string)=> s.charAt(0).toUpperCase() + String(s).slice(1)).join(' '))
+  const handleNamesInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const namesList = e.target.value
+      .split('\n')
+      .filter((name: string) => name.trim() !== '')
+      .map((n: string) => 
+        n.split(' ')
+         .map((s: string) => s.charAt(0).toUpperCase() + s.slice(1))
+         .join(' ')
+      );
     setNames(namesList);
   };
 
-  //@ts-ignore
   // Function to convert viewport coordinates to image coordinates
-function viewportToImageCoordinates(viewportX, viewportY, canvas, image) {
-  // Get the displayed dimensions of the image in the canvas
-  const displayWidth = canvas.clientWidth;
-  const displayHeight = canvas.clientHeight;
-  
-  // Get the actual dimensions of the image
-  const imageWidth = image.width;
-  const imageHeight = image.height;
-  
-  // Calculate the scale factors
-  const scaleX = imageWidth / displayWidth;
-  const scaleY = imageHeight / displayHeight;
-  
-  // Convert the coordinates
-  const imageX = viewportX * scaleX;
-  const imageY = viewportY * scaleY;
-  
-  return { x: imageX, y: imageY };
-}
-
-  //@ts-ignore
-// Function to convert image coordinates to viewport coordinates
-function imageToViewportCoordinates(imageX, imageY, canvas, image) {
-  // Get the displayed dimensions of the image in the canvas
-  const displayWidth = canvas.clientWidth;
-  const displayHeight = canvas.clientHeight;
-  
-  // Get the actual dimensions of the image
-  const imageWidth = image.width;
-  const imageHeight = image.height;
-  
-  // Calculate the scale factors
-  const scaleX = displayWidth / imageWidth;
-  const scaleY = displayHeight / imageHeight;
-  
-  // Convert the coordinates
-  const viewportX = imageX * scaleX;
-  const viewportY = imageY * scaleY;
-  
-  return { x: viewportX, y: viewportY };
-}
-
-  //@ts-ignore
-// Updated mouse event handlers
-const handleMouseDown = (e) => {
-  const canvas = canvasRef.current;
-  const rect = canvas.getBoundingClientRect();
-  
-  // Get viewport coordinates
-  const viewportX = e.clientX - rect.left;
-  const viewportY = e.clientY - rect.top;
-  
-  // Convert to image coordinates
-  const imageCoords = viewportToImageCoordinates(viewportX, viewportY, canvas, imageRef.current);
-  
-  setStartPos(imageCoords);
-  setSelection({ x: imageCoords.x, y: imageCoords.y, width: 0, height: 0 });
-  setIsSelecting(true);
-};
-
-const handleMouseMove = (e:any) => {
-  if (!isSelecting) return;
-  
-  const canvas = canvasRef.current;
-  const rect = canvas.getBoundingClientRect();
-  
-  // Get viewport coordinates
-  const viewportX = e.clientX - rect.left;
-  const viewportY = e.clientY - rect.top;
-  
-  // Convert to image coordinates
-  const imageCoords = viewportToImageCoordinates(viewportX, viewportY, canvas, imageRef.current);
-  
-  const width = imageCoords.x - startPos.x;
-  const height = imageCoords.y - startPos.y;
-  
-  setSelection({
-    x: width > 0 ? startPos.x : imageCoords.x,
-    y: height > 0 ? startPos.y : imageCoords.y,
-    width: Math.abs(width),
-    height: Math.abs(height)
-  });
-  
-  drawImageAndSelection();
-};
-
-// Updated drawImageAndSelection function
-const drawImageAndSelection = () => {
-  const canvas = canvasRef.current;
-  if (!canvas || !imageRef.current) return;
-  
-  const ctx = canvas.getContext('2d');
-  
-  // Set canvas size to match image
-  canvas.width = imageRef.current.width;
-  canvas.height = imageRef.current.height;
-  
-  //@ts-ignore
-  // Adjust canvas display size if needed, maintaining aspect ratio
-  const maxDisplayWidth = canvasContainer.current?.clientWidth;
-  const aspectRatio = imageRef.current.width / imageRef.current.height;
-  
-  if (canvas.width > maxDisplayWidth) {
-    canvas.style.width = `${maxDisplayWidth}px`;
-    canvas.style.height = `${maxDisplayWidth / aspectRatio}px`;
-  } else {
-    canvas.style.width = `${canvas.width}px`;
-    canvas.style.height = `${canvas.height}px`;
+  function viewportToImageCoordinates(
+    viewportX: number, 
+    viewportY: number, 
+    canvas: HTMLCanvasElement, 
+    image: HTMLImageElement
+  ) {
+    // Get the displayed dimensions of the image in the canvas
+    const displayWidth = canvas.clientWidth;
+    const displayHeight = canvas.clientHeight;
+    
+    // Get the actual dimensions of the image
+    const imageWidth = image.width;
+    const imageHeight = image.height;
+    
+    // Calculate the scale factors
+    const scaleX = imageWidth / displayWidth;
+    const scaleY = imageHeight / displayHeight;
+    
+    // Convert the coordinates
+    const imageX = viewportX * scaleX;
+    const imageY = viewportY * scaleY;
+    
+    return { x: imageX, y: imageY };
   }
-  
-  // Draw image
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(imageRef.current, 0, 0);
-  
-  // Draw selection rectangle
-  if (selection.width > 0 && selection.height > 0) {
-    ctx.strokeStyle = '#FF0000';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(selection.x, selection.y, selection.width, selection.height);
+
+  // Function to convert image coordinates to viewport coordinates
+  function imageToViewportCoordinates(
+    imageX: number, 
+    imageY: number, 
+    canvas: HTMLCanvasElement, 
+    image: HTMLImageElement
+  ) {
+    // Get the displayed dimensions of the image in the canvas
+    const displayWidth = canvas.clientWidth;
+    const displayHeight = canvas.clientHeight;
+    
+    // Get the actual dimensions of the image
+    const imageWidth = image.width;
+    const imageHeight = image.height;
+    
+    // Calculate the scale factors
+    const scaleX = displayWidth / imageWidth;
+    const scaleY = displayHeight / imageHeight;
+    
+    // Convert the coordinates
+    const viewportX = imageX * scaleX;
+    const viewportY = imageY * scaleY;
+    
+    return { x: viewportX, y: viewportY };
   }
-};
+
+  // Updated mouse event handlers
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !imageRef.current) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    
+    // Get viewport coordinates
+    const viewportX = e.clientX - rect.left;
+    const viewportY = e.clientY - rect.top;
+    
+    // Convert to image coordinates
+    const imageCoords = viewportToImageCoordinates(viewportX, viewportY, canvas, imageRef.current);
+    
+    setStartPos(imageCoords);
+    setSelection({ x: imageCoords.x, y: imageCoords.y, width: 0, height: 0 });
+    setIsSelecting(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isSelecting || !canvasRef.current || !imageRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    
+    // Get viewport coordinates
+    const viewportX = e.clientX - rect.left;
+    const viewportY = e.clientY - rect.top;
+    
+    // Convert to image coordinates
+    const imageCoords = viewportToImageCoordinates(viewportX, viewportY, canvas, imageRef.current);
+    
+    const width = imageCoords.x - startPos.x;
+    const height = imageCoords.y - startPos.y;
+    
+    setSelection({
+      x: width > 0 ? startPos.x : imageCoords.x,
+      y: height > 0 ? startPos.y : imageCoords.y,
+      width: Math.abs(width),
+      height: Math.abs(height)
+    });
+    
+    drawImageAndSelection();
+  };
+
+  // Updated drawImageAndSelection function
+  const drawImageAndSelection = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !imageRef.current) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Set canvas size to match image
+    canvas.width = imageRef.current.width;
+    canvas.height = imageRef.current.height;
+    
+    // Adjust canvas display size if needed, maintaining aspect ratio
+    const maxDisplayWidth = canvasContainer.current?.clientWidth || 800;
+    const aspectRatio = imageRef.current.width / imageRef.current.height;
+    
+    if (canvas.width > maxDisplayWidth) {
+      canvas.style.width = `${maxDisplayWidth}px`;
+      canvas.style.height = `${maxDisplayWidth / aspectRatio}px`;
+    } else {
+      canvas.style.width = `${canvas.width}px`;
+      canvas.style.height = `${canvas.height}px`;
+    }
+    
+    // Draw image
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(imageRef.current, 0, 0);
+    
+    // Draw selection rectangle
+    if (selection.width > 0 && selection.height > 0) {
+      ctx.strokeStyle = '#FF0000';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(selection.x, selection.y, selection.width, selection.height);
+    }
+  };
   
-
-const handleMouseUp = () => {
-  setIsSelecting(false);
-};
-
-
+  const handleMouseUp = () => {
+    setIsSelecting(false);
+  };
 
   // Touch events for mobile devices
-  const handleTouchStart = (e:any) => {
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault(); // Prevent scrolling while selecting
-    if (e.touches.length !== 1) return; // Only handle single touch
+    if (e.touches.length !== 1 || !canvasRef.current || !imageRef.current) return; // Only handle single touch
     
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
@@ -195,9 +213,9 @@ const handleMouseUp = () => {
     setIsSelecting(true);
   };
   
-  const handleTouchMove = (e:any) => {
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault(); // Prevent scrolling while selecting
-    if (!isSelecting || e.touches.length !== 1) return;
+    if (!isSelecting || e.touches.length !== 1 || !canvasRef.current || !imageRef.current) return;
     
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
@@ -226,22 +244,12 @@ const handleMouseUp = () => {
     setIsSelecting(false);
   };
 
-  // Process images with names
-  const processImages = () => {
-    if (!image || names.length === 0 || selection.width === 0 || selection.height === 0) {
-      alert('Please upload an image, enter names, and select an area in the image.');
-      return;
-    }
-    
-    const canvas = document.createElement('canvas');
-    canvas.width = imageRef.current?.width;
-    canvas.height = imageRef.current?.height;
-    const ctx = canvas.getContext('2d')!;
-    
-    const processed = names.map(name => {
+  // Helper function to process a single image
+  const processImage = (name: string, canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
+    return new Promise<{name: string, dataUrl: string}>((resolve) => {
       // Draw image
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(imageRef.current, 0, 0);
+      ctx.drawImage(imageRef.current!, 0, 0);
       
       // Add name text
       ctx.fillStyle = textColor;
@@ -254,34 +262,74 @@ const handleMouseUp = () => {
       
       ctx.fillText(name, textX, textY);
       
-      return {
+      // Use original image format and quality
+      const outputType = originalImageType === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+      const dataUrl = canvas.toDataURL(outputType, originalImageQuality);
+      
+      resolve({
         name,
-        dataUrl: canvas.toDataURL('image/png')
-      };
+        dataUrl
+      });
     });
+  };
+
+  // Process images with names - now queued to do one image at a time
+  const processImages = async () => {
+    if (!image || names.length === 0 || selection.width === 0 || selection.height === 0) {
+      alert('Please upload an image, enter names, and select an area in the image.');
+      return;
+    }
     
-    //@ts-ignore
+    const canvas = document.createElement('canvas');
+    canvas.width = imageRef.current?.width || 0;
+    canvas.height = imageRef.current?.height || 0;
+    const ctx = canvas.getContext('2d')!;
+    
+    const processed = [];
+    
+    // Process images one at a time to avoid overwhelming the browser
+    for (let i = 0; i < names.length; i++) {
+      const name = names[i];
+      const processedImage = await processImage(name, canvas, ctx);
+      processed.push(processedImage);
+      console.log('ProcessedCount',i + 1)
+    }
+    // @ts-ignore
     setProcessedImages(processed);
   };
   
-  // Download a processed image
-  //@ts-ignore
-  const downloadImage = (dataUrl, fileName) => {
+  // Download a processed image with proper file extension
+  const downloadImage = (dataUrl: string, fileName: string) => {
     const link = document.createElement('a');
     link.href = dataUrl;
-    link.download = `${fileName}.png`;
+    
+    // Use proper file extension based on original image type
+    const extension = originalImageType === 'image/jpeg' ? 'jpg' : 'png';
+    link.download = `${fileName}.${extension}`;
+    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
   
   // Download all processed images
-  const downloadAllImages = () => {
-    processedImages.forEach((img:any,index:number) => {
-      setTimeout(() => {
-        downloadImage(img.dataUrl, img.name);
-      }, index * 500);
-    });
+  const downloadAllImages = async () => {
+    setIsDownloading(true);
+    setDownloadedCount(0);
+    
+    for (let i = 0; i < processedImages.length; i++) {
+      const img = processedImages[i];
+      // @ts-ignore
+      downloadImage(img.dataUrl, img.name);
+      setDownloadedCount(i + 1);
+      
+      // Add delay between downloads to avoid overwhelming the browser
+      if (i < processedImages.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+    
+    setIsDownloading(false);
   };
   
   // Update canvas when image or selection changes
@@ -316,7 +364,11 @@ const handleMouseUp = () => {
           <div className="settings">
             <label>
               Color:
-              <input type="color" value={textColor} onChange={(e:any) => setTextColor(e.target.value)} />
+              <input 
+                type="color" 
+                value={textColor} 
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTextColor(e.target.value)} 
+              />
             </label>
             <label>
               Font Size:
@@ -325,12 +377,15 @@ const handleMouseUp = () => {
                 value={fontSize} 
                 min="8" 
                 max="72" 
-                onChange={(e:any) => setFontSize(parseInt(e.target.value))} 
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFontSize(parseInt(e.target.value))} 
               />
             </label>
             <label>
               Font:
-              <select value={fontFamily} onChange={(e:any) => setFontFamily(e.target.value)}>
+              <select 
+                value={fontFamily} 
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFontFamily(e.target.value)}
+              >
                 <option value="Vazir">وزیر</option>
                 <option value="OpenSans">OpenSans</option>
                 <option value="BerkshireSwash">BerkshireSwash</option>
@@ -355,7 +410,12 @@ const handleMouseUp = () => {
         
         <div className="section">
           <h2>4. Draw rectangle where names should appear</h2>
-          <button onClick={processImages} className="process-btn">Process Images</button>
+          <button 
+            onClick={processImages} 
+            className="process-btn"
+          >
+            Process Images
+          </button>
         </div>
       </div>
       
@@ -380,12 +440,12 @@ const handleMouseUp = () => {
       {processedImages.length > 0 && (
         <div className="results-panel">
           <h2>Processed Images</h2>
-          <button onClick={downloadAllImages} className="download-all-btn">
-            Download All Images
+          <button onClick={downloadAllImages} className="download-all-btn" disabled={isDownloading}>
+            {isDownloading ? `Downloaded ${downloadedCount}/${processedImages.length}` : 'Download All Images'}
           </button>
           
           <div className="image-grid">
-            {processedImages.map((img:any, index) => (
+            {processedImages.map((img: {name: string, dataUrl: string}, index) => (
               <div key={index} className="processed-image">
                 <img src={img.dataUrl} alt={img.name} />
                 <div className="image-name">{img.name}</div>
