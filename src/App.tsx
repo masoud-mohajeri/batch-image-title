@@ -83,30 +83,30 @@ function App() {
   }
 
   // Function to convert image coordinates to viewport coordinates
-  function imageToViewportCoordinates(
-    imageX: number, 
-    imageY: number, 
-    canvas: HTMLCanvasElement, 
-    image: HTMLImageElement
-  ) {
-    // Get the displayed dimensions of the image in the canvas
-    const displayWidth = canvas.clientWidth;
-    const displayHeight = canvas.clientHeight;
+  // function imageToViewportCoordinates(
+  //   imageX: number, 
+  //   imageY: number, 
+  //   canvas: HTMLCanvasElement, 
+  //   image: HTMLImageElement
+  // ) {
+  //   // Get the displayed dimensions of the image in the canvas
+  //   const displayWidth = canvas.clientWidth;
+  //   const displayHeight = canvas.clientHeight;
     
-    // Get the actual dimensions of the image
-    const imageWidth = image.width;
-    const imageHeight = image.height;
+  //   // Get the actual dimensions of the image
+  //   const imageWidth = image.width;
+  //   const imageHeight = image.height;
     
-    // Calculate the scale factors
-    const scaleX = displayWidth / imageWidth;
-    const scaleY = displayHeight / imageHeight;
+  //   // Calculate the scale factors
+  //   const scaleX = displayWidth / imageWidth;
+  //   const scaleY = displayHeight / imageHeight;
     
-    // Convert the coordinates
-    const viewportX = imageX * scaleX;
-    const viewportY = imageY * scaleY;
+  //   // Convert the coordinates
+  //   const viewportX = imageX * scaleX;
+  //   const viewportY = imageY * scaleY;
     
-    return { x: viewportX, y: viewportY };
-  }
+  //   return { x: viewportX, y: viewportY };
+  // }
 
   // Updated mouse event handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
